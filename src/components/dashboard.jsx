@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Space, Table, Tag } from "antd";
 import {
   DesktopOutlined,
   FileOutlined,
@@ -23,7 +24,7 @@ function getItem(label, key, icon, children) {
 
 const items = [
   getItem("Dashboard", "1", <PieChartOutlined />),
-  getItem("Categories", "2", <DesktopOutlined />),
+  getItem(<Link to="/categories">Categories</Link>, "2", <DesktopOutlined />),
   getItem("Listing", "sub1", <UserOutlined />, [
     getItem("List 1", "3"),
     getItem("List 2", "4"),
@@ -49,9 +50,81 @@ const Dashboard = () => {
   };
 
   // Breadcrumb items
-  const breadcrumbItems = [
-    { title: "User" },
-    { title: "Dashboard" },
+  const breadcrumbItems = [{ title: "User" }, { title: "Dashboard" }];
+
+  // Table Columns
+  const columns = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text) => <a>{text}</a>,
+    },
+    {
+      title: "Age",
+      dataIndex: "age",
+      key: "age",
+    },
+    {
+      title: "Address",
+      dataIndex: "address",
+      key: "address",
+    },
+    {
+      title: "Tags",
+      key: "tags",
+      dataIndex: "tags",
+      render: (_, { tags }) => (
+        <>
+          {tags.map((tag) => {
+            let color = tag.length > 5 ? "geekblue" : "green";
+            if (tag === "loser") {
+              color = "volcano";
+            }
+            return (
+              <Tag color={color} key={tag}>
+                {tag.toUpperCase()}
+              </Tag>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Space size="middle">
+          <a>Invite {record.name}</a>
+          <a>Delete</a>
+        </Space>
+      ),
+    },
+  ];
+
+  // Table Data
+  const data = [
+    {
+      key: "1",
+      name: "John Brown",
+      age: 32,
+      address: "New York No. 1 Lake Park",
+      tags: ["nice", "developer"],
+    },
+    {
+      key: "2",
+      name: "Jim Green",
+      age: 42,
+      address: "London No. 1 Lake Park",
+      tags: ["loser"],
+    },
+    {
+      key: "3",
+      name: "Aman Kaushik",
+      age: 32,
+      address: "Sydney No. 1 Lake Park",
+      tags: ["cool", "teacher"],
+    },
   ];
 
   return (
@@ -91,12 +164,10 @@ const Dashboard = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            Welcome to your Dashboard!
+            <Table columns={columns} dataSource={data} />
           </div>
         </Content>
-        <Footer style={{ textAlign: "center" }}>
-          Ant Design ©{new Date().getFullYear()} Created by Ant UED
-        </Footer>
+        <Footer style={{ textAlign: "center" }}>Ant Design ©{new Date().getFullYear()} Created by Ant UED</Footer>
       </Layout>
     </Layout>
   );
