@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Space, Table, Tag } from "antd";
+import { Space, Table, Tag, Breadcrumb, Layout, Menu, theme, Button, message, Popconfirm } from "antd";
 import {
   DesktopOutlined,
   FileOutlined,
@@ -8,18 +8,14 @@ import {
   TeamOutlined,
   UserOutlined,
   LogoutOutlined,
+  EyeOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
-import { Breadcrumb, Layout, Menu, theme, Button } from "antd";
 
 const { Header, Content, Footer, Sider } = Layout;
 
 function getItem(label, key, icon, children) {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  };
+  return { key, icon, children, label };
 }
 
 const items = [
@@ -45,85 +41,84 @@ const Dashboard = () => {
   } = theme.useToken();
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Logout action
-    navigate("/"); // Redirect to login page
+    localStorage.removeItem("token");
+    navigate("/");
   };
 
-  // Breadcrumb items
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("https://fakestoreapi.com/products")
+      .then((response) => response.json())
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      });
+
+  }, []);
+
   const breadcrumbItems = [{ title: "User" }, { title: "Dashboard" }];
+
+  // Delete Product Function
+  const handleDelete = (id) => {
+    setProducts(products.filter((product) => product.id !== id));
+    message.success("Product deleted successfully!");
+  };
 
   // Table Columns
   const columns = [
     {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      render: (text) => <a>{text}</a>,
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
     },
     {
-      title: "Age",
-      dataIndex: "age",
-      key: "age",
+      title: "Product",
+      dataIndex: "title",
+      key: "title",
+      render: (text) => <strong>{text}</strong>,
     },
     {
-      title: "Address",
-      dataIndex: "address",
-      key: "address",
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+      render: (text) => <Tag color="blue">{text}</Tag>,
     },
     {
-      title: "Tags",
-      key: "tags",
-      dataIndex: "tags",
-      render: (_, { tags }) => (
-        <>
-          {tags.map((tag) => {
-            let color = tag.length > 5 ? "geekblue" : "green";
-            if (tag === "loser") {
-              color = "volcano";
-            }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (price) => `$${price.toFixed(2)}`,
+    },
+    {
+      title: "Image",
+      dataIndex: "image",
+      key: "image",
+      render: (src) => <img src={src} alt="Product" style={{ width: 50 }} />,
     },
     {
       title: "Action",
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <a>Invite {record.name}</a>
-          <a>Delete</a>
+          {/* View Button */}
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/product/${record.id}`)}>
+            View
+          </Button>
+
+          {/* Delete Button with Confirmation */}
+          <Popconfirm title="Are you sure to delete this product?" onConfirm={() => handleDelete(record.id)} okText="Yes" cancelText="No">
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
         </Space>
       ),
-    },
-  ];
-
-  // Table Data
-  const data = [
-    {
-      key: "1",
-      name: "John Brown",
-      age: 32,
-      address: "New York No. 1 Lake Park",
-      tags: ["nice", "developer"],
-    },
-    {
-      key: "2",
-      name: "Jim Green",
-      age: 42,
-      address: "London No. 1 Lake Park",
-      tags: ["loser"],
-    },
-    {
-      key: "3",
-      name: "Aman Kaushik",
-      age: 32,
-      address: "Sydney No. 1 Lake Park",
-      tags: ["cool", "teacher"],
     },
   ];
 
@@ -164,7 +159,8 @@ const Dashboard = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            <Table columns={columns} dataSource={data} />
+            <h2>Products List</h2>
+            <Table columns={columns} dataSource={products} loading={loading} rowKey="id" />
           </div>
         </Content>
         <Footer style={{ textAlign: "center" }}>Ant Design ©{new Date().getFullYear()} Created by Ant UED</Footer>
