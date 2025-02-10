@@ -31,6 +31,7 @@ const items = [
     getItem("Team 2", "8"),
   ]),
   getItem("Files", "10", <FileOutlined />),
+  getItem(<Link to="/data">Data</Link>, "11"),
 ];
 
 const Dashboard = () => {
@@ -50,7 +51,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetch("https://fakestoreapi.com/products")
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch data");
+        }
+        return response.json();
+      })
       .then((data) => {
         setProducts(data);
         setLoading(false);
@@ -58,8 +64,8 @@ const Dashboard = () => {
       .catch((error) => {
         console.error("Error fetching data:", error);
         setLoading(false);
+        message.error("Failed to load products. Please try again later.");
       });
-
   }, []);
 
   const breadcrumbItems = [{ title: "User" }, { title: "Dashboard" }];
@@ -107,12 +113,21 @@ const Dashboard = () => {
       render: (_, record) => (
         <Space size="middle">
           {/* View Button */}
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/product/${record.id}`)}>
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/product/${record.id}`)} // Navigate to product details
+          >
             View
           </Button>
 
           {/* Delete Button with Confirmation */}
-          <Popconfirm title="Are you sure to delete this product?" onConfirm={() => handleDelete(record.id)} okText="Yes" cancelText="No">
+          <Popconfirm
+            title="Are you sure to delete this product?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
             <Button type="link" danger icon={<DeleteOutlined />}>
               Delete
             </Button>
@@ -163,7 +178,9 @@ const Dashboard = () => {
             <Table columns={columns} dataSource={products} loading={loading} rowKey="id" />
           </div>
         </Content>
-        <Footer style={{ textAlign: "center" }}>Ant Design ©{new Date().getFullYear()} Created by Ant UED</Footer>
+        <Footer style={{ textAlign: "center" }}>
+          Ant Design ©{new Date().getFullYear()} Created by Ant UED
+        </Footer>
       </Layout>
     </Layout>
   );
