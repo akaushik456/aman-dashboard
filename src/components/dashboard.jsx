@@ -41,9 +41,31 @@ const Dashboard = () => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+  // Logout handler function
+  const handleLogout = async () => {
+    try {
+      // Make sure cookies are included in the request
+      const response = await fetch("http://localhost:5000/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // ✅ Include cookies (important!)
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success(data.message || "Logout successful");
+        localStorage.removeItem("token"); // ✅ Remove token from storage
+        navigate("/login"); // ✅ Redirect to login page
+      } else {
+        message.error(data.message || "Logout failed.");
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
+      message.error("An error occurred while logging out.");
+    }
   };
 
   const [products, setProducts] = useState([]);
@@ -158,7 +180,7 @@ const Dashboard = () => {
           <Button
             type="primary"
             icon={<LogoutOutlined />}
-            onClick={handleLogout}
+            onClick={handleLogout} // Call handleLogout when clicked
             style={{ marginRight: "16px" }}
           >
             Logout

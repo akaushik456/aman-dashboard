@@ -8,7 +8,7 @@ const { Title, Text } = Typography;
 const Login = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
-  const [loading, setLoading] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
 
   // Toggle theme and save to localStorage
   const toggleTheme = (checked) => {
@@ -30,23 +30,52 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values), // values contains email and password
+        body: JSON.stringify(values),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         message.success("Login successful!");
-        localStorage.setItem("token", data.token); // Save token
-        navigate("/dashboard"); // Redirect to dashboard
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard");
       } else {
         message.error(data.message || "Invalid credentials");
       }
     } catch (error) {
       console.error("Login Error:", error);
-      message.error("Something went wrong. Please try again.");
+      message.error("Server not responding. Check backend.");
     }
     setLoading(false);
+  };
+  
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      // Send a POST request to your backend to log out
+      const response = await fetch("http://localhost:5000/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }), // Send token for invalidation
+        credentials: "include", // Ensure that cookies are sent
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        message.success(data.message || "Logout successful");
+        localStorage.removeItem("token");
+        navigate("/login"); // Redirect to login page
+      } else {
+        message.error(data.message || "Logout failed.");
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
+      message.error("An error occurred while logging out.");
+    }
   };
 
   return (
@@ -122,86 +151,14 @@ const Login = () => {
             </Form.Item>
           </Form>
         </div>
+
+        {/* Logout Button */}
+        <Button type="default" onClick={handleLogout} style={{ marginTop: "20px" }}>
+          Logout
+        </Button>
       </div>
     </ConfigProvider>
   );
 };
 
 export default Login;
-
-
-
-// import React, { useState } from 'react';
-// import { Form, Input, Button, message } from 'antd';
-// import { useNavigate } from 'react-router-dom';
-
-// const Login = () => {
-//   const [loading, setLoading] = useState(false);
-//   const navigate = useNavigate();
-
-//   const onFinish = async (values) => {
-//     setLoading(true);
-//     try {
-//       const response = await fetch("http://localhost:5000/api/auth/login", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(values),
-//       });
-  
-//       const data = await response.json();
-      
-//       // Debugging: Log the values being sent
-//       console.log("Request Payload:", values);
-      
-//       if (response.ok) {
-//         message.success("Login successful!");
-//         localStorage.setItem("token", data.token); // Save token
-//         navigate("/dashboard"); // Redirect to dashboard
-//       } else {
-//         message.error(data.message || "Invalid credentials");
-//       }
-//     } catch (error) {
-//       console.error("Login Error:", error);
-//       message.error("Something went wrong. Please try again.");
-//     }
-//     setLoading(false);
-//   };
-
-//   return (
-//     <div style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '50px' }}>
-//       <h2>Login</h2>
-//       <Form
-//         name="login"
-//         initialValues={{ remember: true }}
-//         onFinish={onFinish}
-//         autoComplete="off"
-//       >
-//         <Form.Item
-//           label="Email"
-//           name="email"
-//           rules={[{ required: true, message: "Please input your email!" }]}
-//         >
-//           <Input />
-//         </Form.Item>
-
-//         <Form.Item
-//           label="Password"
-//           name="password"
-//           rules={[{ required: true, message: "Please input your password!" }]}
-//         >
-//           <Input.Password />
-//         </Form.Item>
-
-//         <Form.Item>
-//           <Button type="primary" htmlType="submit" loading={loading} block>
-//             Login
-//           </Button>
-//         </Form.Item>
-//       </Form>
-//     </div>
-//   );
-// };
-
-// export default Login;

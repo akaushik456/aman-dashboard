@@ -1,11 +1,8 @@
-import React, { useEffect } from "react";
+
 import Teacher from "./Teacher";
 
 const dataUse = () => {
 
-  useEffect(() => {
-    fetch()
-  })
 
   const show = ('aman')
 
