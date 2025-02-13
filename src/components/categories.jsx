@@ -1,126 +1,139 @@
 import React, { useState } from "react";
-import { Breadcrumb, Layout, Menu, theme, Button, Modal } from "antd";
-import {
-  DesktopOutlined,
-  FileOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  BellOutlined,
-} from "@ant-design/icons";
+import { Layout, Menu, Button, Modal, Upload, message } from "antd";
+import { PlusOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
-import "./categories.css";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 const { Header, Content, Footer, Sider } = Layout;
-
-// Function to create menu items
-function getItem(label, key, icon, children, onClick) {
-  return {
-    key,
-    icon,
-    children,
-    label,
-    onClick, // Fix case-sensitive issue
-  };
-}
 
 const Categories = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [crop, setCrop] = useState({ aspect: 1 });
+  const [croppedImage, setCroppedImage] = useState(null);
   const navigate = useNavigate();
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
-  // Open Popup
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-
-  // Close Popup
-  const handleOk = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
-
-  // Logout Function
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/"); // Redirect to login page
+    navigate("/");
   };
 
-  // Sidebar Menu Items
-  const items = [
-    getItem(<Link to="/dashboard">Dashboard</Link>, "1", <PieChartOutlined />),
-    getItem(<Link to="/categories">Categories</Link>, "2", <DesktopOutlined />),
-    getItem("Listing", "sub1", <UserOutlined />, [
-      getItem("List 1", "3"),
-      getItem("Jawahar", "4", "sub3"),
-      getItem("Bellator Group", "9", <BellOutlined />, null, showModal), // Attach popup function
-      getItem("List 3", "5"),
-    ]),
-    getItem("Team", "sub2", <TeamOutlined />, [
-      getItem("Team 1", "6"),
-      getItem("Team 2", "8"),
-    ]),
-    getItem("Files", "10", <FileOutlined />),
-  ];
+  
+
+  const handleUpload = ({ file }) => {
+    console.log(file); // Debugging file object
+    const reader = new FileReader();
+    reader.onload = () => {
+      console.log(reader.result); // Debugging base64 string
+      setSelectedImage(reader.result);
+      setIsModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (crop) => {
+    if (selectedImage && crop.width && crop.height && crop.x !== undefined && crop.y !== undefined) {
+      const image = new Image();
+      image.src = selectedImage;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scaleX = image.naturalWidth / image.width;
+        const scaleY = image.naturalHeight / image.height;
+        canvas.width = crop.width;
+        canvas.height = crop.height;
+        const ctx = canvas.getContext("2d");
+  
+        // Drawing the cropped area onto the canvas
+        ctx.drawImage(
+          image,
+          crop.x * scaleX,
+          crop.y * scaleY,
+          crop.width * scaleX,
+          crop.height * scaleY,
+          0,
+          0,
+          crop.width,
+          crop.height
+        );
+        const croppedDataUrl = canvas.toDataURL("image/png"); // Create a data URL for the cropped image
+        setCroppedImage(croppedDataUrl); // Save the cropped image to state
+      };
+    }
+  };
+  
+
+  const handleSaveCroppedImage = async () => {
+    if (!croppedImage) {
+      message.error("Please crop the image first");
+      return;
+    }
+
+    // Example API request
+    try {
+      const response = await fetch('/api/upload-cropped', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: croppedImage }),
+      });
+      if (response.ok) {
+        message.success('Image uploaded successfully');
+      } else {
+        message.error('Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      message.error('Error uploading image');
+    }
+  };
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div className="demo-logo-vertical" />
-        <Menu theme="dark" defaultSelectedKeys={["2"]} mode="inline" items={items} />
+      <Menu theme="dark" defaultSelectedKeys={["2"]} mode="inline" items={[
+      { key: "1", label: <Link to="/dashboard">Dashboard</Link> },
+      { key: "2", label: <Link to="/categories">Categories</Link> }
+       ]} />
       </Sider>
-
       <Layout>
-        <Header
-          style={{
-            padding: 0,
-            background: colorBgContainer,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h2 style={{ margin: "16px", fontSize: "18px" }}>Categories</h2>
-          <Button
-            type="primary"
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            style={{ marginRight: "26px" }}
-          >
-            Logout
-          </Button>
+        <Header style={{ display: "flex", justifyContent: "space-between" }}>
+          <h2>Categories</h2>
+          <Button type="primary" icon={<LogoutOutlined />} onClick={handleLogout}>Logout</Button>
         </Header>
+        <Content style={{ margin: "16px" }}>
+  <Upload showUploadList={false} beforeUpload={() => false} onChange={handleUpload}>
+    <Button icon={<PlusOutlined />}>Upload Image</Button>
+  </Upload>
 
-        <Content style={{ margin: "0 16px" }}>
-          <Breadcrumb style={{ margin: "16px 0" }} items={[{ title: "User" }, { title: "Categories" }]} />
-          <div
-            style={{
-              padding: 24,
-              minHeight: 360,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-            }}
-          >
-            <h3>Aman</h3>
-          </div>
-        </Content>
-
-        <Footer style={{ textAlign: "center" }}>
-          Ant Design ©{new Date().getFullYear()} Created by Ant UED
-        </Footer>
+  {/* Check if croppedImage is not null */}
+  {croppedImage ? (
+  <div style={{ marginTop: 20 }}>
+    <h3>Cropped Image:</h3>
+    <img src={croppedImage} alt="Cropped" style={{ maxWidth: "100%", display: "block", marginTop: 10 }} />
+  </div>
+) : (
+  selectedImage && (
+    <div style={{ marginTop: 20 }}>
+      <h3>Original Image:</h3>
+      <img src={selectedImage} alt="Original" style={{ maxWidth: "100%", display: "block", marginTop: 10 }} />
+    </div>
+  )
+)}
+</Content>
+        <Footer style={{ textAlign: "center" }}>Ant Design ©{new Date().getFullYear()}</Footer>
       </Layout>
-
-      {/* ✅ Popup Modal for Bellator Group */}
-      <Modal title="Bellator Group" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
-        <p>Welcome to Bellator Group!</p>
-        <p>Here is some information about our group.</p>
+      <Modal title="Crop Image" open={isModalOpen} onOk={() => setIsModalOpen(false)} onCancel={() => setIsModalOpen(false)}>
+        {selectedImage && (
+          <ReactCrop
+            src={selectedImage}
+            crop={crop}
+            onChange={setCrop}
+            onComplete={handleCropComplete}
+          />
+        )}
       </Modal>
     </Layout>
   );
