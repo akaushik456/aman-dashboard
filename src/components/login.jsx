@@ -49,6 +49,26 @@ const Login = () => {
     setLoading(false);
   };
   
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/auth/check-session", {
+          method: "GET",
+          credentials: "include", // ✅ Required for session cookies
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          navigate("/"); // ✅ Redirect to login if session is invalid
+        }
+      } catch (error) {
+        navigate("/"); // ✅ Redirect to login if error occurs
+      }
+    };
+  
+    checkSession();
+  }, []);
+
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
   
@@ -68,7 +88,7 @@ const Login = () => {
       if (response.ok) {
         message.success(data.message || "Logout successful");
         localStorage.removeItem("token");
-        navigate("/login"); // Redirect to login page
+        navigate("/"); // Redirect to login page
       } else {
         message.error(data.message || "Logout failed.");
       }
