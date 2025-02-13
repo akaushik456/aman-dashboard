@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "homepage": "https://akaushik456.github.io/vite-app/"
   },
   "dependencies": {
     "antd": "^5.23.3",
