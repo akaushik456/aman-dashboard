@@ -10,6 +10,8 @@ const AuthPage = () => {
   const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false); // Toggle between login and sign up
+  const [isForgotPassword, setIsForgotPassword] = useState(false); // Toggle for Forgot Password flow
+  const [email, setEmail] = useState(""); // Email for Forgot Password
 
   useEffect(() => {
     document.body.style.backgroundColor = darkMode ? "#1a1a1a" : "#ffffff";
@@ -37,6 +39,29 @@ const AuthPage = () => {
         message.success(`${isSignUp ? "Registration" : "Login"} successful!`);
         localStorage.setItem("token", data.token);
         navigate("/dashboard"); // Redirect to dashboard after login
+      } else {
+        message.error(data.message || "Something went wrong!");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      message.error("Server not responding. Check backend.");
+    }
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        message.success("Password reset link sent to your email!");
+        setIsForgotPassword(false); // Hide the forgot password form after successful submission
       } else {
         message.error(data.message || "Something went wrong!");
       }
@@ -77,37 +102,67 @@ const AuthPage = () => {
         {/* Auth Form */}
         <div style={{ maxWidth: "400px", width: "100%", padding: "20px", borderRadius: "8px", background: darkMode ? "#222" : "#f5f5f5", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
           <Title level={2} style={{ color: darkMode ? "#fff" : "#000" }}>
-            {isSignUp ? "Sign Up" : "Sign In"}
+            {isSignUp ? "Sign Up" : isForgotPassword ? "Forgot Password" : "Sign In"}
           </Title>
-          <Text style={{ color: darkMode ? "#ddd" : "#333" }}>{isSignUp ? "Create a new account" : "Enter your email and password"}</Text>
-
-          <Form name="auth-form" layout="vertical" onFinish={onFinish}>
-            <Form.Item name="email" rules={[{ required: true, message: "Please enter your email!" }, { type: 'email', message: 'Enter a valid email!' }]}>
-              <Input autoFocus prefix={<UserOutlined />} placeholder="Email" />
-            </Form.Item>
-
-            <Form.Item name="password" rules={[{ required: true, message: "Please enter your password!" }]}>
-              <Input.Password prefix={<LockOutlined />} placeholder="Password" />
-            </Form.Item>
-
-            <Form.Item>
-              <Checkbox style={{ color: darkMode ? "#ddd" : "#333" }}>Remember me</Checkbox>
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit" block loading={loading}>
-                {isSignUp ? "Sign Up" : "Log In"}
-              </Button>
-            </Form.Item>
-          </Form>
-
-          {/* Switch Between Login and Sign Up */}
           <Text style={{ color: darkMode ? "#ddd" : "#333" }}>
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <a style={{ color: darkMode ? "#1890ff" : "#1890ff", cursor: "pointer" }} onClick={() => setIsSignUp(!isSignUp)}>
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </a>
+            {isForgotPassword
+              ? "Enter your email to receive a password reset link"
+              : isSignUp
+              ? "Create a new account"
+              : "Enter your email and password"}
           </Text>
+
+          {/* Forgot Password Form */}
+          {isForgotPassword ? (
+            <Form name="forgot-password" layout="vertical" onFinish={handleForgotPassword}>
+              <Form.Item name="email" rules={[{ required: true, message: "Please enter your email!" }, { type: 'email', message: 'Enter a valid email!' }]}>
+                <Input autoFocus prefix={<UserOutlined />} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Form.Item>
+
+              <Form.Item>
+                <Button type="primary" htmlType="submit" block loading={loading}>
+                  Send Reset Link
+                </Button>
+              </Form.Item>
+            </Form>
+          ) : (
+            <Form name="auth-form" layout="vertical" onFinish={onFinish}>
+              <Form.Item name="email" rules={[{ required: true, message: "Please enter your email!" }, { type: 'email', message: 'Enter a valid email!' }]}>
+                <Input autoFocus prefix={<UserOutlined />} placeholder="Email" />
+              </Form.Item>
+
+              <Form.Item name="password" rules={[{ required: true, message: "Please enter your password!" }]}>
+                <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+              </Form.Item>
+
+              <Form.Item>
+                <Checkbox style={{ color: darkMode ? "#ddd" : "#333" }}>Remember me</Checkbox>
+              </Form.Item>
+
+              <Form.Item>
+                <Button type="primary" htmlType="submit" block loading={loading}>
+                  {isSignUp ? "Sign Up" : "Log In"}
+                </Button>
+              </Form.Item>
+            </Form>
+          )}
+
+          {/* Switch Between Login, Sign Up, and Forgot Password */}
+          {!isForgotPassword && (
+            <Text style={{ color: darkMode ? "#ddd" : "#333" }}>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <a style={{ color: darkMode ? "#1890ff" : "#1890ff", cursor: "pointer" }} onClick={() => setIsSignUp(!isSignUp)}>
+                {isSignUp ? "Sign In" : "Sign Up"}
+              </a>
+              <br />
+              <a
+                style={{ color: darkMode ? "#1890ff" : "#1890ff", cursor: "pointer" }}
+                onClick={() => setIsForgotPassword(true)}
+              >
+                Forgot Password?
+              </a>
+            </Text>
+          )}
         </div>
 
         {/* Logout Button */}
