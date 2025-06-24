@@ -46,14 +46,17 @@ const Dashboard = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/auth/check-session", {
+        const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/check-session", {
           method: "GET",
-          credentials: "include", // ✅ Required for session cookies
+           headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         });
         const data = await response.json();
         
         if (!response.ok) {
-          navigate("/dashboard"); // ✅ Redirect to login if session is invalid
+         
+          navigate("/dashboard"); 
         }
       } catch (error) {
         navigate("/login"); // ✅ Redirect to login if error occurs
@@ -67,7 +70,7 @@ const Dashboard = () => {
   const handleLogout = async () => {
     try {
       // Make sure cookies are included in the request
-      const response = await fetch("http://localhost:5000/api/auth/logout", {
+      const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/logout", {
         method: "POST",
         credentials: "include", // ✅ Include cookies (important!)
         headers: {

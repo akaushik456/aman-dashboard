@@ -9,9 +9,9 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between login and sign up
-  const [isForgotPassword, setIsForgotPassword] = useState(false); // Toggle for Forgot Password flow
-  const [email, setEmail] = useState(""); // Email for Forgot Password
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     document.body.style.backgroundColor = darkMode ? "#1a1a1a" : "#ffffff";
@@ -23,36 +23,38 @@ const AuthPage = () => {
     localStorage.setItem("theme", checked ? "dark" : "light");
   };
 
-  const onFinish = async (values) => {
+  const handleLogin = async (values) => {
+    if (loading) return;
     setLoading(true);
+
     try {
-      const endpoint = isSignUp ? "register" : "login"; // Change API based on mode
-      const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+      const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
-        credentials: "include", // Required for session cookies
       });
 
       const data = await response.json();
+
       if (response.ok) {
-        message.success(`${isSignUp ? "Registration" : "Login"} successful!`);
+        message.success("Login successful!");
         localStorage.setItem("token", data.token);
-        navigate("/dashboard"); // Redirect to dashboard after login
+        navigate("/dashboard");
       } else {
-        message.error(data.message || "Something went wrong!");
+        message.error(data.message || "Login failed!");
       }
     } catch (error) {
-      console.error("Error:", error);
-      message.error("Server not responding. Check backend.");
+      console.error("❌ Login Error:", error);
+      message.error("Server error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleForgotPassword = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+      const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -60,21 +62,21 @@ const AuthPage = () => {
 
       const data = await response.json();
       if (response.ok) {
-        message.success("Password reset link sent to your email!");
-        setIsForgotPassword(false); // Hide the forgot password form after successful submission
+        message.success("Password reset link sent!");
+        setIsForgotPassword(false);
       } else {
         message.error(data.message || "Something went wrong!");
       }
     } catch (error) {
       console.error("Error:", error);
-      message.error("Server not responding. Check backend.");
+      message.error("Server not responding.");
     }
     setLoading(false);
   };
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/logout", {
+      const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -83,7 +85,7 @@ const AuthPage = () => {
       if (response.ok) {
         message.success("Logout successful");
         localStorage.removeItem("token");
-        navigate("/"); // Redirect to login page
+        navigate("/");
       } else {
         message.error(data.message || "Logout failed.");
       }
@@ -93,13 +95,41 @@ const AuthPage = () => {
     }
   };
 
+  const handleRegister = async (values) => {
+    if (loading) return;
+    setLoading(true);
+  
+    try {
+      console.log("📤 Sending Register Data:", values); // Debugging
+  
+      const response = await fetch("https://backend-login-api-d0py.onrender.com/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        message.success("Registration successful!");
+        setIsSignUp(false); // Switch to login after sign-up
+      } else {
+        message.error(data.message || "Registration failed!");
+      }
+    } catch (error) {
+      console.error("❌ Registration Error:", error);
+      message.error("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
   return (
     <ConfigProvider theme={{ algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
       <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", transition: "all 0.3s ease" }}>
-        {/* Dark Mode Toggle */}
         <Switch checkedChildren={<MoonOutlined />} unCheckedChildren={<BulbOutlined />} checked={darkMode} onChange={toggleTheme} style={{ marginBottom: 20 }} />
 
-        {/* Auth Form */}
         <div style={{ maxWidth: "400px", width: "100%", padding: "20px", borderRadius: "8px", background: darkMode ? "#222" : "#f5f5f5", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
           <Title level={2} style={{ color: darkMode ? "#fff" : "#000" }}>
             {isSignUp ? "Sign Up" : isForgotPassword ? "Forgot Password" : "Sign In"}
@@ -112,9 +142,8 @@ const AuthPage = () => {
               : "Enter your email and password"}
           </Text>
 
-          {/* Forgot Password Form */}
           {isForgotPassword ? (
-            <Form name="forgot-password" layout="vertical" onFinish={handleForgotPassword}>
+            <Form name="auth-form" layout="vertical" onFinish={isSignUp ? handleRegister : handleLogin}>
               <Form.Item name="email" rules={[{ required: true, message: "Please enter your email!" }, { type: 'email', message: 'Enter a valid email!' }]}>
                 <Input autoFocus prefix={<UserOutlined />} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </Form.Item>
@@ -126,7 +155,7 @@ const AuthPage = () => {
               </Form.Item>
             </Form>
           ) : (
-            <Form name="auth-form" layout="vertical" onFinish={onFinish}>
+            <Form name="auth-form" layout="vertical" onFinish={handleLogin}>
               <Form.Item name="email" rules={[{ required: true, message: "Please enter your email!" }, { type: 'email', message: 'Enter a valid email!' }]}>
                 <Input autoFocus prefix={<UserOutlined />} placeholder="Email" />
               </Form.Item>
@@ -147,25 +176,20 @@ const AuthPage = () => {
             </Form>
           )}
 
-          {/* Switch Between Login, Sign Up, and Forgot Password */}
           {!isForgotPassword && (
             <Text style={{ color: darkMode ? "#ddd" : "#333" }}>
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-              <a style={{ color: darkMode ? "#1890ff" : "#1890ff", cursor: "pointer" }} onClick={() => setIsSignUp(!isSignUp)}>
+              <a style={{ color: "#1890ff", cursor: "pointer" }} onClick={() => setIsSignUp(!isSignUp)}>
                 {isSignUp ? "Sign In" : "Sign Up"}
               </a>
               <br />
-              <a
-                style={{ color: darkMode ? "#1890ff" : "#1890ff", cursor: "pointer" }}
-                onClick={() => setIsForgotPassword(true)}
-              >
+              <a style={{ color: "#1890ff", cursor: "pointer" }} onClick={() => setIsForgotPassword(true)}>
                 Forgot Password?
               </a>
             </Text>
           )}
         </div>
 
-        {/* Logout Button */}
         <Button type="default" onClick={handleLogout} style={{ marginTop: "20px" }}>
           Logout
         </Button>
